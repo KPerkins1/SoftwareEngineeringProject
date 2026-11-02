@@ -12,6 +12,20 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+## Login demo
+
+Start the authentication API in a separate terminal:
+
+```powershell
+dotnet run --project backend/AuthApi/AuthApi.csproj --urls http://localhost:5000
+```
+
+Then start Angular with `npm start` and open `http://localhost:4200/`.
+Use `demo@example.com` with password `Password123!` to sign in.
+
+The API currently has one in-memory demo user. It is for local development and
+does not provide account registration or persistent user storage.
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
