@@ -1,0 +1,135 @@
+<div class="workspace">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Signal CTF home">
+      <span class="brand-mark" aria-hidden="true">S</span>
+      <span>signal<span class="brand-light">/</span>ctf</span>
+    </a>
+    @if (user; as signedInUser) {
+      <div class="account-bar">
+        <span class="role-label">{{ signedInUser.role }}</span>
+        <span class="account-email">{{ signedInUser.email }}</span>
+        <button class="button button-quiet" type="button" (click)="signOut()">Sign out</button>
+      </div>
+    }
+  </header>
+
+  <main>
+    @if (!user) {
+      <section class="login-layout">
+        <div class="login-intro">
+          <p class="eyebrow">CTF OPERATIONS</p>
+          <h1>Build the next<br /><span>challenge.</span></h1>
+          <p class="intro-copy">Create events, organize challenge sets, and prepare your teams to compete.</p>
+          <div class="intro-rule"></div>
+          <p class="access-note">Access is available to authorized instructors and administrators.</p>
+        </div>
+        <form class="login-panel" (ngSubmit)="signIn()">
+          @if (notice) { <p class="notice" role="status">{{ notice }}</p> }
+          @if (error) { <p class="error-message" role="alert">{{ error }}</p> }
+          <p class="eyebrow">STAFF ACCESS</p>
+          <h2>Sign in</h2>
+          <label for="login-email">Email address</label>
+          <input id="login-email" name="email" type="email" autocomplete="username" [(ngModel)]="email" required maxlength="254" />
+          <label for="login-password">Password</label>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" [(ngModel)]="password" required />
+          <button class="button button-primary full-width" type="submit" [disabled]="isBusy">{{ isBusy ? 'Signing in…' : 'Sign in' }} <span aria-hidden="true">→</span></button>
+          <p class="login-footnote">Accounts are provisioned by a system administrator.</p>
+        </form>
+      </section>
+    } @else {
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">CONTROL ROOM / EVENTS</p>
+          <h1>CTF events</h1>
+          <p class="page-subtitle">Create and manage competitions for your community.</p>
+        </div>
+        <span class="event-count"><strong>{{ ctfs.length }}</strong> {{ ctfs.length === 1 ? 'event' : 'events' }}</span>
+      </section>
+
+      <section class="management-grid">
+        <div class="event-column">
+          <section class="panel event-list-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">SCHEDULE</p><h2>Upcoming & past</h2></div>
+              <span class="panel-index">01</span>
+            </div>
+            @if (ctfs.length === 0) {
+              <div class="empty-state">
+                <span class="empty-mark" aria-hidden="true">+</span>
+                <h3>No events yet</h3>
+                <p>Create a CTF or import a JSON event file to get started.</p>
+              </div>
+            } @else {
+              <div class="event-list">
+                @for (ctf of ctfs; track ctf.id) {
+                  <article class="event-row">
+                    <div class="event-date"><span>{{ formatDate(ctf.startsAt) }}</span><span>to {{ formatDate(ctf.endsAt) }}</span></div>
+                    <div class="event-summary"><h3>{{ ctf.title }}</h3><p>{{ ctf.description }}</p></div>
+                    <span class="category-tag">{{ ctf.category }}</span>
+                  </article>
+                }
+              </div>
+            }
+          </section>
+
+          <section class="panel import-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">BULK SETUP</p><h2>Import from JSON</h2></div>
+              <span class="panel-index">02</span>
+            </div>
+            <p class="panel-copy">Upload one event or a collection of up to 50. Only event data is accepted.</p>
+            <label class="upload-target">
+              <input type="file" accept="application/json,.json" (change)="importFile($event)" [disabled]="isBusy" />
+              <span class="upload-icon" aria-hidden="true">↑</span>
+              <span><strong>Choose a JSON file</strong><small>Maximum file size: 1 MB</small></span>
+              <span class="upload-arrow" aria-hidden="true">↗</span>
+            </label>
+          </section>
+        </div>
+
+        <aside class="form-column">
+          <section class="panel create-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">NEW EVENT</p><h2>Create a CTF</h2></div>
+              <span class="panel-index">03</span>
+            </div>
+            <form (ngSubmit)="createCtf()">
+              <label for="ctf-title">Event name</label>
+              <input id="ctf-title" name="ctfTitle" [(ngModel)]="ctfTitle" required maxlength="120" placeholder="e.g. Spring Security Jam" />
+              <label for="ctf-description">Description</label>
+              <textarea id="ctf-description" name="ctfDescription" [(ngModel)]="ctfDescription" required maxlength="4000" rows="4" placeholder="What should participants know?" ></textarea>
+              <label for="ctf-category">Format</label>
+              <select id="ctf-category" name="ctfCategory" [(ngModel)]="ctfCategory">
+                <option>Jeopardy</option><option>Attack / Defense</option><option>Mixed</option><option>Workshop</option>
+              </select>
+              <div class="time-grid">
+                <div><label for="ctf-start">Starts</label><input id="ctf-start" name="startsAt" type="datetime-local" [(ngModel)]="startsAt" required /></div>
+                <div><label for="ctf-end">Ends</label><input id="ctf-end" name="endsAt" type="datetime-local" [(ngModel)]="endsAt" required /></div>
+              </div>
+              <button class="button button-primary full-width" type="submit" [disabled]="isBusy">Create event <span aria-hidden="true">→</span></button>
+            </form>
+          </section>
+
+          @if (isAdmin) {
+            <section class="panel instructor-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">ADMINISTRATION</p><h2>Add instructor</h2></div>
+                <span class="panel-index">04</span>
+              </div>
+              <form (ngSubmit)="provisionInstructor()">
+                <label for="instructor-email">Email address</label>
+                <input id="instructor-email" name="instructorEmail" type="email" autocomplete="off" [(ngModel)]="instructorEmail" required maxlength="254" />
+                <label for="instructor-password">Temporary password</label>
+                <input id="instructor-password" name="instructorPassword" type="password" autocomplete="new-password" [(ngModel)]="instructorPassword" required minlength="12" />
+                <button class="button button-secondary full-width" type="submit" [disabled]="isBusy">Create instructor account</button>
+              </form>
+            </section>
+          }
+        </aside>
+      </section>
+      @if (notice) { <p class="notice bottom-notice" role="status">{{ notice }}</p> }
+      @if (error) { <p class="error-message bottom-notice" role="alert">{{ error }}</p> }
+    }
+  </main>
+  <footer><span>signal/ctf</span><span>STAFF CONSOLE</span></footer>
+</div>
