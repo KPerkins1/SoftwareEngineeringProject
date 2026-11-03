@@ -1,3 +1,4 @@
+/* These rules apply to the whole page, outside the component styles. */
 * {
 	box-sizing: border-box;
 }
