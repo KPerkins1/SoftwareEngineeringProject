@@ -38,6 +38,10 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+/App_Data/uploads/
+/backend/AuthApi/App_Data/uploads/
+/backend/AuthApi/bin/Release/
+/backend/AuthApi/obj/Release/
 
 # System files
 .DS_Store

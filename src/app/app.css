@@ -3,10 +3,10 @@
   min-height: 100dvh;
 }
 
+/* Shared page layout, colours, and header/footer styles. */
 .auth-shell {
   --ink: #242228;
   --muted: #77727d;
-  --line: #d7d3db;
   --accent: #cf4f87;
   min-height: 100dvh;
   padding: 0 6.2vw;
@@ -68,12 +68,10 @@
 .auth-layout {
   flex: 1;
   width: 100%;
-  max-width: 520px;
+  max-width: 1180px;
   margin: auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  align-items: stretch;
   border: 1px solid #4b4650;
   border-radius: 5px;
   background: #dedbe1;
@@ -103,6 +101,7 @@
     #dedbe1;
 }
 
+/* Styles used by the sign-in form and its status messages. */
 .form-heading h2,
 .signed-in-view h2 {
   margin: 0;
@@ -218,39 +217,300 @@ form input:focus {
   line-height: 1.5;
 }
 
-.signed-in-view .error-message {
-  margin: -12px 0 20px;
-}
-
-.signed-in-view .primary-button {
-  margin-top: 7px;
-}
-
-.status-mark {
-  width: 44px;
-  height: 44px;
-  margin-bottom: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #f4dce7;
-  color: #ad376c;
-}
-
-.status-mark svg {
-  width: 22px;
-  height: 22px;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
 .session-check {
   color: var(--muted);
   font-size: 13px;
 }
 
+/* Main signed-in area, including the event list and create-event form. */
+.ctf-dashboard {
+  width: 100%;
+  padding: clamp(28px, 5vw, 58px);
+  background:
+    linear-gradient(135deg, rgb(255 255 255 / 46%), transparent 54%),
+    #dedbe1;
+  color: #242228;
+}
+
+.dashboard-heading,
+.events-heading,
+.event-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.dashboard-heading h1,
+.events-heading h2,
+.create-panel h2 {
+  margin: 0;
+  color: #242228;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+}
+
+.dashboard-heading h1 {
+  font-size: clamp(32px, 5vw, 48px);
+  line-height: 1.1;
+}
+
+.dashboard-heading .eyebrow,
+.events-heading .eyebrow,
+.create-panel .eyebrow {
+  margin-bottom: 12px;
+}
+
+.dashboard-description {
+  margin: 10px 0 0;
+  color: #77727d;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sign-out-button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #c8c3cd;
+  border-radius: 3px;
+  background: transparent;
+  color: #3b3740;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sign-out-button:disabled,
+.upload-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.management-layout {
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: minmax(250px, 0.72fr) minmax(0, 1.5fr);
+  gap: clamp(28px, 5vw, 64px);
+  border-top: 1px solid #c6c1cb;
+}
+
+.create-panel,
+.events-panel {
+  min-width: 0;
+  padding-top: 27px;
+}
+
+.events-panel {
+  border-left: 1px solid #c6c1cb;
+  padding-left: clamp(24px, 4vw, 48px);
+}
+
+.events-heading h2,
+.create-panel h2 {
+  font-size: 27px;
+  line-height: 1.2;
+}
+
+.create-panel form {
+  margin-top: 25px;
+}
+
+.create-panel input,
+.create-panel textarea {
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 12px 13px;
+  border: 1px solid #c8c3cd;
+  border-radius: 3px;
+  outline: none;
+  background: #f1eff2;
+  color: #242228;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.create-panel input {
+  height: 45px;
+}
+
+.create-panel input:focus,
+.create-panel textarea:focus {
+  border-color: #c7447e;
+  box-shadow: 0 0 0 3px rgb(199 68 126 / 14%);
+}
+
+.optional-label {
+  float: right;
+  color: #8b858f;
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.empty-state {
+  min-height: 150px;
+  margin-top: 20px;
+  padding: 24px;
+  border: 1px dashed #bcb7c2;
+  color: #77727d;
+  text-align: center;
+}
+
+.empty-state p {
+  margin: 12px 0 5px;
+  color: #3b3740;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 19px;
+}
+
+.event-list {
+  margin-top: 20px;
+  border-top: 1px solid #c6c1cb;
+}
+
+.event-item {
+  padding: 19px 0;
+  border-bottom: 1px solid #c6c1cb;
+}
+
+.event-title-row h3 {
+  margin: 0;
+  color: #29262d;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.event-description {
+  margin: 5px 0 0;
+  color: #77727d;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* A puzzle has a player view and a separate form for organizers to add one. */
+.challenge-list {
+  margin-top: 18px;
+}
+
+.challenge-card,
+.challenge-create {
+  padding: 16px 0;
+  border-top: 1px solid #c6c1cb;
+}
+
+.challenge-heading,
+.puzzle-fields {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.challenge-heading h4,
+.challenge-create h4 {
+  margin: 0;
+  color: #29262d;
+  font-size: 13px;
+}
+
+.challenge-heading span,
+.solved-label {
+  flex: 0 0 auto;
+  color: #ad376c;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.challenge-prompt {
+  margin: 9px 0;
+  color: #4a4650;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.challenge-file {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: #ad376c;
+  font-size: 11px;
+}
+
+.flag-form label,
+.challenge-create label {
+  display: block;
+  margin: 10px 0 6px;
+  color: #3b3740;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Aptos Mono', Consolas, monospace;
+}
+
+.flag-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flag-entry input,
+.challenge-create input:not([type='file']),
+.challenge-create textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #c8c3cd;
+  border-radius: 3px;
+  background: #f1eff2;
+  color: #242228;
+  font: inherit;
+  font-size: 12px;
+}
+
+.challenge-create textarea {
+  resize: vertical;
+}
+
+.puzzle-fields > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.puzzle-file {
+  width: 100%;
+  margin: 0 0 15px;
+  color: #4a4650;
+  font-size: 11px;
+}
+
+.flag-entry .upload-button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #c7447e;
+  border-radius: 3px;
+  background: transparent;
+  color: #ad376c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.flag-entry .upload-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.challenge-feedback {
+  margin: 9px 0 0;
+  color: #a52e62;
+  font-size: 11px;
+}
+
+/* Keep the same layout usable on tablets and narrow phone screens. */
 .page-footer {
   min-height: 55px;
   border-top: 1px solid rgb(255 255 255 / 14%);
@@ -282,6 +542,21 @@ form input:focus {
   .form-panel {
     padding: 38px 30px 42px;
   }
+
+  .ctf-dashboard {
+    padding: 30px 24px;
+  }
+
+  .management-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .events-panel {
+    border-left: 0;
+    border-top: 1px solid #c6c1cb;
+    padding: 26px 0 0;
+  }
 }
 
 @media (max-width: 420px) {
@@ -295,6 +570,19 @@ form input:focus {
 
   .form-panel {
     padding: 34px 22px;
+  }
+
+  .ctf-dashboard {
+    padding: 26px 18px;
+  }
+
+  .dashboard-heading {
+    flex-direction: column;
+  }
+
+  .flag-entry {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .page-footer {

@@ -26,6 +26,16 @@ Use `demo@example.com` with password `Password123!` to sign in.
 The API currently has one in-memory demo user. It is for local development and
 does not provide account registration or persistent user storage.
 
+## CTF management
+
+After signing in, create CTF events and upload challenge files from the CTF
+library. Each puzzle has a prompt, point value, optional downloadable file, and
+private expected flag. Players submit flags in the event library; the API checks
+them and records solved state per user. Puzzle files are limited to 25 MB and
+stored under `App_Data/uploads` relative to the API content root. Event and
+solved-state records are kept in memory and reset when the API restarts; files
+remain on disk.
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:

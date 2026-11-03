@@ -1,3 +1,4 @@
+<!-- The page keeps the login and signed-in workspace inside one shared layout. -->
 <main class="auth-shell">
   <header class="topbar">
     <a class="wordmark" href="/" aria-label="RatCTF home">
@@ -12,24 +13,152 @@
       @if (checkingSession()) {
         <div class="session-check" role="status">Checking your session...</div>
       } @else if (user(); as currentUser) {
-        <div class="signed-in-view">
-          <div class="status-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="m5 12.5 4.2 4.2L19 7" />
-            </svg>
+        <!-- Signed-in users can create CTFs, add puzzles, and try their flags here. -->
+        <section class="ctf-dashboard" aria-label="CTF management">
+          <div class="dashboard-heading">
+            <div>
+              <p class="eyebrow">Operator workspace</p>
+              <h1>Capture the flags.</h1>
+              <p class="dashboard-description">Welcome, {{ currentUser.name }}. Create an event, publish puzzles, and solve them with flags.</p>
+            </div>
+            <button class="sign-out-button" type="button" (click)="logout()" [disabled]="busy()" aria-label="Sign out">
+              Sign out <span aria-hidden="true">&#8599;</span>
+            </button>
           </div>
-          <p class="eyebrow">Access granted</p>
-          <h2>Welcome, {{ currentUser.name }}.</h2>
-          <p class="form-description">Your challenge board is ready. The trail starts here.</p>
+
           @if (errorMessage()) {
-            <p class="error-message" role="alert">{{ errorMessage() }}</p>
+            <p class="error-message dashboard-message" role="alert">{{ errorMessage() }}</p>
           }
-          <button class="primary-button" type="button" (click)="logout()" [disabled]="busy()">
-            {{ busy() ? 'Signing out...' : 'Sign out' }}
-            <span aria-hidden="true">&#8594;</span>
-          </button>
-        </div>
+          @if (noticeMessage()) {
+            <p class="success-message dashboard-message" role="status">{{ noticeMessage() }}</p>
+          }
+
+          <div class="management-layout">
+            <section class="create-panel" aria-labelledby="create-heading">
+              <p class="eyebrow">01 / New event</p>
+              <h2 id="create-heading">Create a CTF</h2>
+              <form (ngSubmit)="createCtf()" #ctfForm="ngForm">
+                <label for="ctf-name">Event name</label>
+                <input id="ctf-name" name="ctfName" type="text" maxlength="100" [(ngModel)]="ctfName" required />
+
+                <label for="ctf-description">Description <span class="optional-label">OPTIONAL</span></label>
+                <textarea id="ctf-description" name="ctfDescription" rows="4" maxlength="1000" [(ngModel)]="ctfDescription"></textarea>
+
+                <button class="primary-button" type="submit" [disabled]="ctfForm.invalid || busy()">
+                  {{ busy() ? 'Creating...' : 'Create event' }}
+                  <span aria-hidden="true">&#8594;</span>
+                </button>
+              </form>
+            </section>
+
+            <section class="events-panel" aria-labelledby="events-heading">
+              <div class="events-heading">
+                <div>
+                  <p class="eyebrow">02 / Your events</p>
+                  <h2 id="events-heading">CTF library</h2>
+                </div>
+                <span>{{ ctfs().length.toString().padStart(2, '0') }}</span>
+              </div>
+
+              @if (ctfs().length === 0) {
+                <div class="empty-state">
+                  <p>No events yet.</p>
+                  <span>Your new CTFs will appear here.</span>
+                </div>
+              } @else {
+                <div class="event-list">
+                  @for (ctf of ctfs(); track ctf.id) {
+                    <article class="event-item">
+                      <div class="event-title-row">
+                        <div>
+                          <h3>{{ ctf.name }}</h3>
+                          <p class="event-description">{{ ctf.description || 'No description provided.' }}</p>
+                        </div>
+                        <span>{{ ctf.challenges.length }} puzzles</span>
+                      </div>
+
+                      @if (ctf.challenges.length > 0) {
+                        <div class="challenge-list">
+                          @for (challenge of ctf.challenges; track challenge.id) {
+                            <article class="challenge-card">
+                              <div class="challenge-heading">
+                                <h4>{{ challenge.name }}</h4>
+                                <span>{{ challenge.points }} pts</span>
+                              </div>
+                              <p class="challenge-prompt">{{ challenge.description }}</p>
+                              @if (challenge.fileName) {
+                                <a class="challenge-file" [href]="challengeFileUrl(ctf.id, challenge.id)" [download]="challenge.fileName">
+                                  Download puzzle file: {{ challenge.fileName }}
+                                </a>
+                              }
+
+                              @if (challenge.isSolved) {
+                                <p class="solved-label" role="status">Solved</p>
+                              } @else {
+                                <!-- The browser sends guesses to the API; it never knows the expected flag. -->
+                                <form class="flag-form" (ngSubmit)="submitFlag(ctf.id, challenge.id)" #flagForm="ngForm">
+                                  <label [for]="'flag-' + challenge.id">Enter flag</label>
+                                  <div class="flag-entry">
+                                    <input
+                                      [id]="'flag-' + challenge.id"
+                                      [name]="'flag-' + challenge.id"
+                                      type="text"
+                                      autocomplete="off"
+                                      [(ngModel)]="flagAnswers[challenge.id]"
+                                      required
+                                    />
+                                    <button class="upload-button" type="submit" [disabled]="flagForm.invalid || submittingChallengeId() === challenge.id">
+                                      {{ submittingChallengeId() === challenge.id ? 'Checking...' : 'Submit flag' }}
+                                    </button>
+                                  </div>
+                                </form>
+                              }
+                              @if (challengeFeedback()[challenge.id]) {
+                                <p class="challenge-feedback" role="status">{{ challengeFeedback()[challenge.id] }}</p>
+                              }
+                            </article>
+                          }
+                        </div>
+                      }
+
+                      <!-- The expected flag is sent only to the API when the organizer publishes this puzzle. -->
+                      <section class="challenge-create" [attr.aria-label]="'Add puzzle to ' + ctf.name">
+                        <h4>Add a puzzle</h4>
+                        <form (ngSubmit)="createChallenge(ctf.id, puzzleFile.files?.[0])" #puzzleForm="ngForm">
+                          <label [for]="'puzzle-name-' + ctf.id">Puzzle name</label>
+                          <input [id]="'puzzle-name-' + ctf.id" [name]="'puzzle-name-' + ctf.id" type="text" maxlength="100" [(ngModel)]="challengeNames[ctf.id]" required />
+
+                          <label [for]="'puzzle-prompt-' + ctf.id">Puzzle prompt</label>
+                          <textarea [id]="'puzzle-prompt-' + ctf.id" [name]="'puzzle-prompt-' + ctf.id" rows="3" maxlength="4000" [(ngModel)]="challengeDescriptions[ctf.id]" required></textarea>
+
+                          <div class="puzzle-fields">
+                            <div>
+                              <label [for]="'puzzle-flag-' + ctf.id">Expected flag</label>
+                              <input [id]="'puzzle-flag-' + ctf.id" [name]="'puzzle-flag-' + ctf.id" type="text" autocomplete="off" maxlength="200" [(ngModel)]="challengeFlags[ctf.id]" required />
+                            </div>
+                            <div>
+                              <label [for]="'puzzle-points-' + ctf.id">Points</label>
+                              <input [id]="'puzzle-points-' + ctf.id" [name]="'puzzle-points-' + ctf.id" type="number" min="1" max="10000" [(ngModel)]="challengePoints[ctf.id]" required />
+                            </div>
+                          </div>
+
+                          <label [for]="'puzzle-file-' + ctf.id">Puzzle file <span class="optional-label">OPTIONAL / 25 MB MAX</span></label>
+                          <input #puzzleFile class="puzzle-file" [id]="'puzzle-file-' + ctf.id" type="file" aria-label="Choose puzzle file" />
+                          <button class="primary-button" type="submit" [disabled]="puzzleForm.invalid || creatingChallengeCtfId() === ctf.id">
+                            {{ creatingChallengeCtfId() === ctf.id ? 'Publishing...' : 'Publish puzzle' }}
+                            <span aria-hidden="true">&#8594;</span>
+                          </button>
+                        </form>
+                      </section>
+                    </article>
+                  }
+                </div>
+              }
+            </section>
+          </div>
+        </section>
       } @else {
+        <!-- The login form is shown when there is no active session. -->
         <div class="form-heading">
           <p class="eyebrow">Operator authentication</p>
         </div>

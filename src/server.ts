@@ -7,26 +7,15 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 
+// Angular's compiled browser files are served before requests reach server rendering.
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
-/**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
- */
+// API routes are in the separate ASP.NET AuthApi project, not this rendering server.
 
-/**
- * Serve static files from /browser
- */
+// Serve browser assets directly instead of rendering the Angular app for them.
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',
@@ -35,9 +24,7 @@ app.use(
   }),
 );
 
-/**
- * Handle all other requests by rendering the Angular application.
- */
+// Send page requests through Angular's server renderer.
 app.use((req, res, next) => {
   angularApp
     .handle(req)
@@ -47,10 +34,7 @@ app.use((req, res, next) => {
     .catch(next);
 });
 
-/**
- * Start the server if this module is the main entry point, or it is ran via PM2.
- * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
- */
+// Only start a listener when this file is run directly, not when it is imported.
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
   const port = process.env['PORT'] || 4000;
   app.listen(port, (error) => {
@@ -62,7 +46,5 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
   });
 }
 
-/**
- * Request handler used by the Angular CLI (for dev-server and during build) or Firebase Cloud Functions.
- */
+// Angular CLI can use this handler during development and server builds.
 export const reqHandler = createNodeRequestHandler(app);

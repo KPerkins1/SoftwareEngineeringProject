@@ -1,8 +1,10 @@
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
+using AuthApi.Endpoints;
+using AuthApi.Models;
+using AuthApi.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 
+// These settings let the Angular dev server make cookie-based requests to this API.
 const string angularPolicy = "AngularDevelopmentClient";
 const string cookieScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 const string demoPassword = "Password123!";
@@ -35,72 +37,18 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
-
-var app = builder.Build();
 var demoUser = new DemoUser("1", "demo@example.com", "Demo User");
 demoUser.PasswordHash = new PasswordHasher<DemoUser>()
     .HashPassword(demoUser, demoPassword);
+builder.Services.AddSingleton(demoUser);
+builder.Services.AddSingleton<CtfStore>();
 
+var app = builder.Build();
 app.UseCors(angularPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapPost("/api/auth/login", async (LoginRequest request, HttpContext context) =>
-{
-    if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrEmpty(request.Password))
-    {
-        return Results.BadRequest(new { message = "Email and password are required." });
-    }
-
-    var passwordMatches = string.Equals(
-        request.Email.Trim(), demoUser.Email, StringComparison.OrdinalIgnoreCase)
-        && new PasswordHasher<DemoUser>().VerifyHashedPassword(
-            demoUser, demoUser.PasswordHash, request.Password)
-            != PasswordVerificationResult.Failed;
-
-    if (!passwordMatches)
-    {
-        return Results.Unauthorized();
-    }
-
-    var claims = new[]
-    {
-        new Claim(ClaimTypes.NameIdentifier, demoUser.Id),
-        new Claim(ClaimTypes.Name, demoUser.Name),
-        new Claim(ClaimTypes.Email, demoUser.Email)
-    };
-    var identity = new ClaimsIdentity(claims, cookieScheme);
-    await context.SignInAsync(cookieScheme, new ClaimsPrincipal(identity));
-
-    return Results.Ok(new UserResponse(demoUser.Id, demoUser.Email, demoUser.Name));
-});
-
-app.MapGet("/api/auth/me", (ClaimsPrincipal principal) =>
-{
-    var id = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-    var email = principal.FindFirstValue(ClaimTypes.Email);
-    var name = principal.FindFirstValue(ClaimTypes.Name);
-
-    return id is null || email is null || name is null
-        ? Results.Unauthorized()
-        : Results.Ok(new UserResponse(id, email, name));
-}).RequireAuthorization();
-
-app.MapPost("/api/auth/logout", async (HttpContext context) =>
-{
-    await context.SignOutAsync(cookieScheme);
-    return Results.Ok();
-}).RequireAuthorization();
+app.MapAuthEndpoints();
+app.MapCtfEndpoints();
 
 app.Run();
-
-sealed class DemoUser(string id, string email, string name)
-{
-    public string Id { get; } = id;
-    public string Email { get; } = email;
-    public string Name { get; } = name;
-    public string PasswordHash { get; set; } = string.Empty;
-}
-
-sealed record LoginRequest(string? Email, string? Password);
-sealed record UserResponse(string Id, string Email, string Name);
