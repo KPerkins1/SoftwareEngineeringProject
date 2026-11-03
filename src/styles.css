@@ -19,3 +19,64 @@ button,
 input {
 	font: inherit;
 }
+
+/* Small shared styles for the event and puzzle management controls. */
+.event-tools,
+.challenge-tools,
+.management-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+/* Make the small edit and delete buttons fit beside event and puzzle titles. */
+.management-button {
+	min-height: 30px;
+	padding: 0 8px;
+	font-size: 10px;
+}
+
+/* Give destructive actions a different color so they are easy to notice. */
+.danger-button {
+	color: #a52e62;
+	border-color: #c98ca6;
+}
+
+/* Keep the inline edit form spaced away from the rest of the event. */
+.edit-form {
+	margin: 8px 0;
+}
+
+/* Use the same input look for event fields that appear inside the event list. */
+.event-item > .edit-form input:not([type='file']),
+.event-item > .edit-form textarea {
+	width: 100%;
+	margin: 0 0 10px;
+	padding: 8px 10px;
+	border: 1px solid #c8c3cd;
+	border-radius: 3px;
+	background: #f1eff2;
+	color: #242228;
+	font: inherit;
+	font-size: 12px;
+}
+
+/* This note explains that leaving the flag empty keeps the saved one. */
+.field-note {
+	color: #77727d;
+	font-size: 10px;
+}
+
+/* Align the remove-file checkbox with its text instead of stretching it like a text field. */
+.remove-file-option {
+	display: flex !important;
+	align-items: center;
+	gap: 8px;
+}
+
+.remove-file-option input {
+	width: auto !important;
+	min-height: auto !important;
+	margin: 0 !important;
+}

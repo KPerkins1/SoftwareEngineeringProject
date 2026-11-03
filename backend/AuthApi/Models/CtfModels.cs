@@ -12,8 +12,9 @@ public record ChallengeResponse(Guid Id, string Name, string Description, int Po
 public class CtfEvent(Guid id, string name, string description, DateTimeOffset createdAt)
 {
     public Guid Id { get; } = id;
-    public string Name { get; } = name;
-    public string Description { get; } = description;
+    // These can change when an organizer edits the event.
+    public string Name { get; set; } = name;
+    public string Description { get; set; } = description;
     public DateTimeOffset CreatedAt { get; } = createdAt;
     public ConcurrentDictionary<Guid, CtfChallenge> Challenges { get; } = new();
 }
@@ -21,11 +22,12 @@ public class CtfEvent(Guid id, string name, string description, DateTimeOffset c
 public class CtfChallenge(Guid id, string name, string description, string flag, int points, PuzzleFile? file, DateTimeOffset createdAt)
 {
     public Guid Id { get; } = id;
-    public string Name { get; } = name;
-    public string Description { get; } = description;
-    public string Flag { get; } = flag;
-    public int Points { get; } = points;
-    public PuzzleFile? File { get; } = file;
+    // Organizers can update these puzzle details after publishing.
+    public string Name { get; set; } = name;
+    public string Description { get; set; } = description;
+    public string Flag { get; set; } = flag;
+    public int Points { get; set; } = points;
+    public PuzzleFile? File { get; set; } = file;
     public DateTimeOffset CreatedAt { get; } = createdAt;
     public ConcurrentDictionary<string, byte> SolvedBy { get; } = new();
 }
