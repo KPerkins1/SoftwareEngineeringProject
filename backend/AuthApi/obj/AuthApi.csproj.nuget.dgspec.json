@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\AuthApi.csproj": {}
+    "c:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\AuthApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\AuthApi.csproj": {
+    "c:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\AuthApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\AuthApi.csproj",
+        "projectUniqueName": "c:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\AuthApi.csproj",
         "projectName": "AuthApi",
-        "projectPath": "C:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\AuthApi.csproj",
+        "projectPath": "c:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\AuthApi.csproj",
         "packagesPath": "C:\\Users\\Kaitl\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\obj\\",
+        "outputPath": "c:\\Users\\Kaitl\\OneDrive\\Documents\\Classes_2026\\SE1\\SE1Project\\SoftwareEngineeringProject\\backend\\AuthApi\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Kaitl\\AppData\\Roaming\\NuGet\\NuGet.Config"
