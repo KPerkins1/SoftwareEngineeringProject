@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { App } from './app';
 
 // These tests use a fake HTTP backend so they do not need a running API server.
@@ -40,6 +41,18 @@ describe('App', () => {
       challengeFlags: Record<string, string>;
       challengePoints: Record<string, number>;
       flagAnswers: Record<string, string>;
+      editCtfName: string;
+      editCtfDescription: string;
+      editChallengeName: string;
+      editChallengeDescription: string;
+      editChallengeFlag: string;
+      editChallengePoints: number;
+      startEditCtf: (ctf: { id: string; name: string; description: string }) => void;
+      saveCtf: (ctfId: string) => void;
+      startEditChallenge: (ctfId: string, challenge: { id: string; name: string; description: string; points: number }) => void;
+      saveChallenge: (ctfId: string, challengeId: string, file: File | undefined) => void;
+      deleteChallenge: (ctfId: string, challenge: { id: string; name: string }) => void;
+      deleteCtf: (ctf: { id: string; name: string }) => void;
       createChallenge: (ctfId: string, file: File | undefined) => void;
       submitFlag: (ctfId: string, challengeId: string) => void;
     };
@@ -108,6 +121,55 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelector('.solved-label')?.textContent).toContain('Solved');
+
+    // Saving event edits should send a PUT and show the returned event details.
+    component.startEditCtf(ctf);
+    component.editCtfName = 'Night Shift Finals';
+    component.editCtfDescription = 'Updated event details';
+    component.saveCtf('ctf-1');
+    const updateCtfRequest = http.expectOne('http://localhost:5000/api/ctfs/ctf-1');
+    expect(updateCtfRequest.request.method).toBe('PUT');
+    const updatedCtf = {
+      ...ctf,
+      name: 'Night Shift Finals',
+      description: 'Updated event details',
+      challenges: [{ ...challenge, isSolved: true }],
+    };
+    updateCtfRequest.flush(updatedCtf);
+    fixture.detectChanges();
+    expect(compiled.querySelector('.event-item h3')?.textContent).toContain('Night Shift Finals');
+
+    // A blank replacement flag means the current answer should stay unchanged.
+    component.startEditChallenge('ctf-1', challenge);
+    component.editChallengeName = 'Hidden Signal 2';
+    component.editChallengeDescription = 'Read the updated transmission.';
+    component.editChallengeFlag = '';
+    component.editChallengePoints = 300;
+    component.saveChallenge('ctf-1', 'challenge-1', undefined);
+    const updateChallengeRequest = http.expectOne('http://localhost:5000/api/ctfs/ctf-1/challenges/challenge-1');
+    expect(updateChallengeRequest.request.method).toBe('PUT');
+    const updateBody = updateChallengeRequest.request.body as FormData;
+    expect(updateBody.get('flag')).toBe('');
+    expect(updateBody.get('points')).toBe('300');
+    updateChallengeRequest.flush({ ...challenge, name: 'Hidden Signal 2', points: 300, isSolved: true });
+    fixture.detectChanges();
+    expect(compiled.querySelector('.challenge-card h4')?.textContent).toContain('Hidden Signal 2');
+
+    // After confirmation, each delete should call the API and remove the item from the view.
+    vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
+    component.deleteChallenge('ctf-1', { id: 'challenge-1', name: 'Hidden Signal 2' });
+    const deleteChallengeRequest = http.expectOne('http://localhost:5000/api/ctfs/ctf-1/challenges/challenge-1');
+    expect(deleteChallengeRequest.request.method).toBe('DELETE');
+    deleteChallengeRequest.flush(null, { status: 204, statusText: 'No Content' });
+    fixture.detectChanges();
+    expect(compiled.querySelector('.challenge-card')).toBeNull();
+
+    component.deleteCtf({ id: 'ctf-1', name: 'Night Shift Finals' });
+    const deleteCtfRequest = http.expectOne('http://localhost:5000/api/ctfs/ctf-1');
+    expect(deleteCtfRequest.request.method).toBe('DELETE');
+    deleteCtfRequest.flush(null, { status: 204, statusText: 'No Content' });
+    fixture.detectChanges();
+    expect(compiled.querySelector('.event-item')).toBeNull();
     http.verify();
   });
 });

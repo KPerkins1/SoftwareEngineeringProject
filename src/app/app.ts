@@ -60,16 +60,179 @@ export class App {
   protected readonly noticeMessage = signal('');
   protected readonly creatingChallengeCtfId = signal<string | null>(null);
   protected readonly submittingChallengeId = signal<string | null>(null);
+  // These IDs decide which event or puzzle is currently showing an edit form.
+  protected readonly editingCtfId = signal<string | null>(null);
+  protected readonly editingChallengeId = signal<string | null>(null);
   protected readonly challengeFeedback = signal<Record<string, string>>({});
   protected email = 'demo@example.com';
   protected password = '';
   protected ctfName = '';
   protected ctfDescription = '';
+  // These values hold the draft text while an organizer edits an event.
+  protected editCtfName = '';
+  protected editCtfDescription = '';
   protected challengeNames: Record<string, string> = {};
   protected challengeDescriptions: Record<string, string> = {};
   protected challengeFlags: Record<string, string> = {};
   protected challengePoints: Record<string, number> = {};
   protected flagAnswers: Record<string, string> = {};
+  // These values hold the draft puzzle changes until the API saves them.
+  protected editChallengeCtfId = '';
+  protected editChallengeName = '';
+  protected editChallengeDescription = '';
+  protected editChallengeFlag = '';
+  protected editChallengePoints = 100;
+  protected removeChallengeFile = false;
+
+  // Copy the current event values into the edit form before showing it.
+  protected startEditCtf(ctf: CtfEvent): void {
+    this.editingCtfId.set(ctf.id);
+    this.editCtfName = ctf.name;
+    this.editCtfDescription = ctf.description;
+  }
+
+  // Close the edit form without sending the draft values to the API.
+  protected cancelEditCtf(): void {
+    this.editingCtfId.set(null);
+  }
+
+  // Send the edited event details to the API.
+  protected saveCtf(ctfId: string): void {
+    const name = this.editCtfName.trim();
+    const description = this.editCtfDescription.trim();
+    if (!name) return;
+
+    this.busy.set(true);
+    this.errorMessage.set('');
+    this.http
+      .put<CtfEvent>(`${this.apiUrl}/ctfs/${ctfId}`, { name, description }, { withCredentials: true })
+      .subscribe({
+        next: (updatedCtf) => {
+          // Only update the screen after the API confirms the save.
+          this.ctfs.update((current) => current.map((ctf) => ctf.id === ctfId ? updatedCtf : ctf));
+          this.editingCtfId.set(null);
+          this.noticeMessage.set('CTF event updated.');
+          this.busy.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.setApiError('update this CTF', error.status);
+          this.busy.set(false);
+        },
+      });
+  }
+
+  // Delete an event after the organizer confirms the warning.
+  protected deleteCtf(ctf: CtfEvent): void {
+    // Ask first because deleting an event also deletes every puzzle in it.
+    if (!globalThis.confirm(`Delete "${ctf.name}" and all of its puzzles and files? This cannot be undone.`)) return;
+
+    this.busy.set(true);
+    this.errorMessage.set('');
+    this.http
+      .delete(`${this.apiUrl}/ctfs/${ctf.id}`, { withCredentials: true })
+      .subscribe({
+        next: () => {
+          // Remove the event from the page only after the server deletes it.
+          this.ctfs.update((current) => current.filter((item) => item.id !== ctf.id));
+          this.noticeMessage.set(`Deleted ${ctf.name}.`);
+          this.busy.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.setApiError('delete this CTF', error.status);
+          this.busy.set(false);
+        },
+      });
+  }
+
+  protected startEditChallenge(ctfId: string, challenge: Challenge): void {
+    // A blank new-flag field means the organizer does not want to change the answer.
+    this.editingChallengeId.set(challenge.id);
+    this.editChallengeCtfId = ctfId;
+    this.editChallengeName = challenge.name;
+    this.editChallengeDescription = challenge.description;
+    this.editChallengeFlag = '';
+    this.editChallengePoints = challenge.points;
+    this.removeChallengeFile = false;
+  }
+
+  // Close the puzzle editor and clear which puzzle was being edited.
+  protected cancelEditChallenge(): void {
+    this.editingChallengeId.set(null);
+    this.editChallengeCtfId = '';
+  }
+
+  // Send changed puzzle fields and any replacement file in one request.
+  protected saveChallenge(ctfId: string, challengeId: string, file: File | undefined): void {
+    const name = this.editChallengeName.trim();
+    const description = this.editChallengeDescription.trim();
+    const flag = this.editChallengeFlag.trim();
+    const points = Number(this.editChallengePoints);
+    if (!name || !description || !Number.isInteger(points) || points < 1 || points > 10000) return;
+    if (flag.length > 200) return;
+    if (file && file.size > 25 * 1024 * 1024) {
+      this.errorMessage.set('Puzzle files must be 25 MB or smaller.');
+      return;
+    }
+
+    // FormData is needed because an edit may include a replacement file.
+    const body = new FormData();
+    body.append('name', name);
+    body.append('description', description);
+    body.append('flag', flag);
+    body.append('points', String(points));
+    body.append('removeFile', String(this.removeChallengeFile));
+    if (file) body.append('file', file);
+
+    this.busy.set(true);
+    this.errorMessage.set('');
+    this.http
+      .put<Challenge>(`${this.apiUrl}/ctfs/${ctfId}/challenges/${challengeId}`, body, { withCredentials: true })
+      .subscribe({
+        next: (updatedChallenge) => {
+          // Replace only this puzzle in the matching event after the API accepts the edit.
+          this.ctfs.update((current) => current.map((ctf) => ctf.id === ctfId
+            ? {
+                ...ctf,
+                challenges: ctf.challenges.map((challenge) => challenge.id === challengeId ? updatedChallenge : challenge),
+              }
+            : ctf,
+          ));
+          this.cancelEditChallenge();
+          this.noticeMessage.set('Puzzle updated.');
+          this.busy.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.setApiError('update this puzzle', error.status);
+          this.busy.set(false);
+        },
+      });
+  }
+
+  // Delete one puzzle after confirmation, without removing its whole event.
+  protected deleteChallenge(ctfId: string, challenge: Challenge): void {
+    // Confirm before deleting the puzzle and any file attached to it.
+    if (!globalThis.confirm(`Delete the puzzle "${challenge.name}" and its uploaded file? This cannot be undone.`)) return;
+
+    this.busy.set(true);
+    this.errorMessage.set('');
+    this.http
+      .delete(`${this.apiUrl}/ctfs/${ctfId}/challenges/${challenge.id}`, { withCredentials: true })
+      .subscribe({
+        next: () => {
+          // Keep the event and its other puzzles, and remove only the selected puzzle.
+          this.ctfs.update((current) => current.map((ctf) => ctf.id === ctfId
+            ? { ...ctf, challenges: ctf.challenges.filter((item) => item.id !== challenge.id) }
+            : ctf,
+          ));
+          this.noticeMessage.set(`Deleted ${challenge.name}.`);
+          this.busy.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.setApiError('delete this puzzle', error.status);
+          this.busy.set(false);
+        },
+      });
+  }
 
   constructor() {
     // Wait until browser rendering before checking cookies, since SSR has no browser session.

@@ -69,49 +69,106 @@
                 <div class="event-list">
                   @for (ctf of ctfs(); track ctf.id) {
                     <article class="event-item">
-                      <div class="event-title-row">
-                        <div>
-                          <h3>{{ ctf.name }}</h3>
-                          <p class="event-description">{{ ctf.description || 'No description provided.' }}</p>
+                      <!-- Show either the event details or its edit form, but not both. -->
+                      @if (editingCtfId() === ctf.id) {
+                        <form class="edit-form" (ngSubmit)="saveCtf(ctf.id)" #editCtfForm="ngForm">
+                          <label [for]="'edit-ctf-name-' + ctf.id">Event name</label>
+                          <input [id]="'edit-ctf-name-' + ctf.id" [name]="'edit-ctf-name-' + ctf.id" type="text" maxlength="100" [(ngModel)]="editCtfName" required />
+                          <label [for]="'edit-ctf-description-' + ctf.id">Description</label>
+                          <textarea [id]="'edit-ctf-description-' + ctf.id" [name]="'edit-ctf-description-' + ctf.id" rows="3" maxlength="1000" [(ngModel)]="editCtfDescription"></textarea>
+                          <div class="management-actions">
+                            <button class="management-button sign-out-button" type="submit" [disabled]="editCtfForm.invalid || busy()">Save event</button>
+                            <button class="management-button sign-out-button" type="button" (click)="cancelEditCtf()">Cancel</button>
+                          </div>
+                        </form>
+                      } @else {
+                        <div class="event-title-row">
+                          <div>
+                            <h3>{{ ctf.name }}</h3>
+                            <p class="event-description">{{ ctf.description || 'No description provided.' }}</p>
+                          </div>
+                          <div class="event-tools">
+                            <span>{{ ctf.challenges.length }} puzzles</span>
+                            <!-- Keep event actions beside the event name. -->
+                            <button class="management-button sign-out-button" type="button" (click)="startEditCtf(ctf)" [disabled]="busy()" [attr.aria-label]="'Edit ' + ctf.name">Edit</button>
+                            <button class="management-button sign-out-button danger-button" type="button" (click)="deleteCtf(ctf)" [disabled]="busy()" [attr.aria-label]="'Delete ' + ctf.name">Delete</button>
+                          </div>
                         </div>
-                        <span>{{ ctf.challenges.length }} puzzles</span>
-                      </div>
+                      }
 
                       @if (ctf.challenges.length > 0) {
                         <div class="challenge-list">
                           @for (challenge of ctf.challenges; track challenge.id) {
                             <article class="challenge-card">
-                              <div class="challenge-heading">
-                                <h4>{{ challenge.name }}</h4>
-                                <span>{{ challenge.points }} pts</span>
-                              </div>
-                              <p class="challenge-prompt">{{ challenge.description }}</p>
-                              @if (challenge.fileName) {
-                                <a class="challenge-file" [href]="challengeFileUrl(ctf.id, challenge.id)" [download]="challenge.fileName">
-                                  Download puzzle file: {{ challenge.fileName }}
-                                </a>
-                              }
-
-                              @if (challenge.isSolved) {
-                                <p class="solved-label" role="status">Solved</p>
-                              } @else {
-                                <!-- The browser sends guesses to the API; it never knows the expected flag. -->
-                                <form class="flag-form" (ngSubmit)="submitFlag(ctf.id, challenge.id)" #flagForm="ngForm">
-                                  <label [for]="'flag-' + challenge.id">Enter flag</label>
-                                  <div class="flag-entry">
-                                    <input
-                                      [id]="'flag-' + challenge.id"
-                                      [name]="'flag-' + challenge.id"
-                                      type="text"
-                                      autocomplete="off"
-                                      [(ngModel)]="flagAnswers[challenge.id]"
-                                      required
-                                    />
-                                    <button class="upload-button" type="submit" [disabled]="flagForm.invalid || submittingChallengeId() === challenge.id">
-                                      {{ submittingChallengeId() === challenge.id ? 'Checking...' : 'Submit flag' }}
-                                    </button>
+                              <!-- The edit form lets an organizer change puzzle details and its optional file. -->
+                              @if (editingChallengeId() === challenge.id && editChallengeCtfId === ctf.id) {
+                                <form class="edit-form challenge-create" (ngSubmit)="saveChallenge(ctf.id, challenge.id, editPuzzleFile.files?.[0])" #editPuzzleForm="ngForm">
+                                  <h4>Edit puzzle</h4>
+                                  <label [for]="'edit-puzzle-name-' + challenge.id">Puzzle name</label>
+                                  <input [id]="'edit-puzzle-name-' + challenge.id" [name]="'edit-puzzle-name-' + challenge.id" type="text" maxlength="100" [(ngModel)]="editChallengeName" required />
+                                  <label [for]="'edit-puzzle-prompt-' + challenge.id">Puzzle prompt</label>
+                                  <textarea [id]="'edit-puzzle-prompt-' + challenge.id" [name]="'edit-puzzle-prompt-' + challenge.id" rows="3" maxlength="4000" [(ngModel)]="editChallengeDescription" required></textarea>
+                                  <div class="puzzle-fields">
+                                    <div>
+                                      <label [for]="'edit-puzzle-flag-' + challenge.id">New expected flag</label>
+                                      <input [id]="'edit-puzzle-flag-' + challenge.id" [name]="'edit-puzzle-flag-' + challenge.id" type="text" autocomplete="off" maxlength="200" [(ngModel)]="editChallengeFlag" />
+                                      <span class="field-note">Leave blank to keep the current flag.</span>
+                                    </div>
+                                    <div>
+                                      <label [for]="'edit-puzzle-points-' + challenge.id">Points</label>
+                                      <input [id]="'edit-puzzle-points-' + challenge.id" [name]="'edit-puzzle-points-' + challenge.id" type="number" min="1" max="10000" [(ngModel)]="editChallengePoints" required />
+                                    </div>
+                                  </div>
+                                  <label [for]="'edit-puzzle-file-' + challenge.id">Replace puzzle file</label>
+                                  <input #editPuzzleFile class="puzzle-file" [id]="'edit-puzzle-file-' + challenge.id" type="file" />
+                                  @if (challenge.fileName) {
+                                    <label class="remove-file-option">
+                                      <input type="checkbox" name="removePuzzleFile" [(ngModel)]="removeChallengeFile" />
+                                      Remove current file
+                                    </label>
+                                  }
+                                  <div class="management-actions">
+                                    <button class="management-button sign-out-button" type="submit" [disabled]="editPuzzleForm.invalid || busy()">Save puzzle</button>
+                                    <button class="management-button sign-out-button" type="button" (click)="cancelEditChallenge()">Cancel</button>
                                   </div>
                                 </form>
+                              } @else {
+                                <div class="challenge-heading">
+                                  <h4>{{ challenge.name }}</h4>
+                                  <div class="challenge-tools">
+                                    <span>{{ challenge.points }} pts</span>
+                                    <!-- Keep puzzle actions beside that puzzle's title. -->
+                                    <button class="management-button sign-out-button" type="button" (click)="startEditChallenge(ctf.id, challenge)" [disabled]="busy()" [attr.aria-label]="'Edit ' + challenge.name">Edit</button>
+                                    <button class="management-button sign-out-button danger-button" type="button" (click)="deleteChallenge(ctf.id, challenge)" [disabled]="busy()" [attr.aria-label]="'Delete ' + challenge.name">Delete</button>
+                                  </div>
+                                </div>
+                                <p class="challenge-prompt">{{ challenge.description }}</p>
+                                @if (challenge.fileName) {
+                                  <a class="challenge-file" [href]="challengeFileUrl(ctf.id, challenge.id)" [download]="challenge.fileName">
+                                    Download puzzle file: {{ challenge.fileName }}
+                                  </a>
+                                }
+                                @if (challenge.isSolved) {
+                                  <p class="solved-label" role="status">Solved</p>
+                                } @else {
+                                  <!-- The browser sends guesses to the API; it never knows the expected flag. -->
+                                  <form class="flag-form" (ngSubmit)="submitFlag(ctf.id, challenge.id)" #flagForm="ngForm">
+                                    <label [for]="'flag-' + challenge.id">Enter flag</label>
+                                    <div class="flag-entry">
+                                      <input
+                                        [id]="'flag-' + challenge.id"
+                                        [name]="'flag-' + challenge.id"
+                                        type="text"
+                                        autocomplete="off"
+                                        [(ngModel)]="flagAnswers[challenge.id]"
+                                        required
+                                      />
+                                      <button class="upload-button" type="submit" [disabled]="flagForm.invalid || submittingChallengeId() === challenge.id">
+                                        {{ submittingChallengeId() === challenge.id ? 'Checking...' : 'Submit flag' }}
+                                      </button>
+                                    </div>
+                                  </form>
+                                }
                               }
                               @if (challengeFeedback()[challenge.id]) {
                                 <p class="challenge-feedback" role="status">{{ challengeFeedback()[challenge.id] }}</p>
